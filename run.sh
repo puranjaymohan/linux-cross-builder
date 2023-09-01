@@ -1,0 +1,20 @@
+qemu-system-riscv64 \
+	-bios /usr/lib/riscv64-linux-gnu/opensbi/generic/fw_dynamic.bin \
+	-nographic \
+	-monitor telnet:127.0.0.1:55555,server,nowait \
+	-machine virt \
+	-smp 8 \
+	-object rng-random,filename=/dev/urandom,id=rng0 \
+	-device virtio-rng-device,rng=rng0 \
+	-append "root=/dev/vda2 rw earlycon console=tty0 console=ttyS0 loglevel=8 panic=-1 oops=panic sysctl.vm.panic_on_oom=1" \
+	-drive if=none,file=./rv-linux.img,format=raw,id=hd0 \
+	-device virtio-blk-pci,drive=hd0 \
+	-chardev stdio,id=char0,mux=on,signal=off,logfile=boot.log \
+	-serial chardev:char0 \
+	-kernel ../linux/build/vmlinuz-6.5.0 \
+	-netdev user,id=net0,host=10.0.2.10,hostfwd=tcp::10022-:22 \
+	-device virtio-net-device,netdev=net0 \
+	-m 16G \
+	-object memory-backend-ram,id=mem0,size=16G \
+	-numa node,nodeid=0,memdev=mem0 \
+        -gdb tcp::1234
