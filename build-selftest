@@ -38,20 +38,20 @@ CONFIG_IOMMUFD_TEST=y
 EOF
 
 rm -rf /workspace/kbuild
-make ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- O=/workspace/kbuild defconfig
-make ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- O=/workspace/kbuild kselftest-merge
+make -j $(($(nproc)-1)) ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- O=/workspace/kbuild defconfig
+make -j $(($(nproc)-1)) ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- O=/workspace/kbuild kselftest-merge
 # You need to build the kernel for bpf...
 
 make ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- O=/workspace/kbuild -j $(($(nproc)-1))
 
 mkdir -p /workspace/build
-make ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- O=/workspace/kbuild \
+make -j $(($(nproc)-1)) ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- O=/workspace/kbuild \
      INSTALL_PATH=/workspace/build install
-make ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- O=/workspace/kbuild INSTALL_MOD_STRIP=1 \
+make -j $(($(nproc)-1)) ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- O=/workspace/kbuild INSTALL_MOD_STRIP=1 \
      INSTALL_MOD_PATH=/workspace/build modules_install || true
 
-make ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- O=/workspace/kbuild headers
-make ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- O=/workspace/kbuild HOSTCC=gcc FORMAT= \
+make -j $(($(nproc)-1)) ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- O=/workspace/kbuild headers
+make -j $(($(nproc)-1)) ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- O=/workspace/kbuild HOSTCC=gcc FORMAT= \
   SKIP_TARGETS="arm64 ia64 powerpc sparc64 x86 sgx" -C tools/testing/selftests gen_tar
 
 if [[ -f /rootfs/lunar.tar ]]; then
