@@ -1,0 +1,1 @@
+LABEL=rootfs	/	ext4	user_xattr,errors=remount-ro	0	1

@@ -1,0 +1,61 @@
+#!/bin/bash
+# SPDX-FileCopyrightText: 2023 Rivos Inc.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+set -euo pipefail
+
+cd /workspace
+
+cat <<EOF >>tools/testing/selftests/bpf/config
+CONFIG_NAMESPACES=y
+CONFIG_MODULE_SIG=n
+EOF
+
+if [ -f "initramfs" ];
+then
+	rm initramfs
+fi
+
+make ARCH=arm mrproper
+make -j $(($(nproc)-1)) ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- multi_v7_defconfig
+./scripts/kconfig/merge_config.sh -m .config tools/testing/selftests/bpf/config
+make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- olddefconfig
+# You need to build the kernel for bpf...
+
+make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- -j $(($(nproc)-1))
+
+mkdir -p /workspace/build
+make -j $(($(nproc)-1)) ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- \
+     INSTALL_PATH=/rootfs/boot install
+make -j $(($(nproc)-1)) ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- INSTALL_MOD_STRIP=1 \
+     INSTALL_MOD_PATH=/rootfs/ modules_install || true
+
+make -j $(($(nproc)-1)) ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- headers
+make -j $(($(nproc)-1)) ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- HOSTCC=gcc \
+	-C tools/testing/selftests/bpf
+
+cp -r tools/testing/selftests/bpf /rootfs/root/
+
+mkdir /tmp/root
+
+if [ -f "rootfs.ext4" ];
+then
+    mount ./rootfs.ext4 /tmp/root
+    rm -rf /tmp/root/*
+else
+    dd if=/dev/zero of=./rootfs.ext4 bs=1M count=$((2 * 1024))
+    mkfs.ext4 ./rootfs.ext4
+    mount ./rootfs.ext4 /tmp/root
+fi
+
+cp -r /rootfs/* /tmp/root/
+sync
+chroot /tmp/root/ /bin/bash <<END
+mkinitramfs -k -o /boot/initramfs $(grep "Kernel Configuration" .config | awk -F " " '{print $3}')
+END
+cp /tmp/root/boot/initramfs .
+umount /tmp/root
+
+echo "Kernel selftest successfully built!"
+

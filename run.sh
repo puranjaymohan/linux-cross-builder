@@ -1,0 +1,14 @@
+qemu-system-arm \
+	-cpu cortex-a15 \
+	-M virt \
+	-m 4G \
+	-smp 4 \
+	-kernel ../linux/arch/arm/boot/zImage \
+	-nographic \
+	-device virtio-blk-device,drive=hd \
+	-drive file=../linux/rootfs.ext4,if=none,id=hd \
+	-initrd ../linux/initramfs \
+	-append "root=/dev/vda rw" \
+	-device virtio-net-device,netdev=net \
+	-netdev user,id=net,hostfwd=tcp::2222-:22 \
+	-gdb tcp::1234
