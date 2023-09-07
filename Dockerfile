@@ -29,13 +29,12 @@ RUN apt-get update && apt-get install --yes --no-install-recommends \
     curl \
     diffstat \
     flex \
-    g++-riscv64-linux-gnu \
     gawk \
-    gcc-riscv64-linux-gnu \
     gdb \
     gettext \
     git \
     git-lfs \
+    gcc-aarch64-linux-gnu \
     gperf \
     groff \
     less \
@@ -81,35 +80,36 @@ RUN apt-get install --yes clang llvm
 RUN cd $(mktemp -d) && git clone https://git.kernel.org/pub/scm/devel/pahole/pahole.git && \
     cd pahole && mkdir build && cd build && cmake -D__LIB=lib .. && make install
 
-RUN dpkg --add-architecture riscv64
+RUN dpkg --add-architecture arm64
 
 RUN apt-get update
 
 RUN apt-get install --yes --no-install-recommends \
-    libasound2-dev:riscv64 \
-    libc6-dev:riscv64 \
-    libcap-dev:riscv64 \
-    libcap-ng-dev:riscv64 \
-    libelf-dev:riscv64 \
-    libfuse-dev:riscv64 \
-    libhugetlbfs-dev:riscv64 \
-    libmnl-dev:riscv64 \
-    libnuma-dev:riscv64 \
-    libpopt-dev:riscv64 \
-    libssl-dev:riscv64 \
-    liburing-dev:riscv64
+    libasound2-dev:arm64 \
+    libc6-dev:arm64 \
+    libcap-dev:arm64 \
+    libcap-ng-dev:arm64 \
+    libelf-dev:arm64 \
+    libfuse-dev:arm64 \
+    libhugetlbfs-dev:arm64 \
+    libmnl-dev:arm64 \
+    libnuma-dev:arm64 \
+    libpopt-dev:arm64 \
+    libssl-dev:arm64 \
+    liburing-dev:arm64
 
 RUN mkdir /rootfs
 
-RUN mmdebstrap --architectures=riscv64 --include="liburing2,libasound2,net-tools,socat,ethtool,iputils-ping,uuid-runtime,rsync,python3,libnuma1,libmnl0,libfuse2,libcap2,libcap-ng0,libhugetlbfs0,libssl3,jq,iptables,nftables,netsniff-ng,tcpdump,traceroute,tshark,fuse3,netcat-openbsd" sid /rootfs/sid.tar \
-    --customize-hook='echo rv-selftester > "$1/etc/hostname"' \
+RUN mmdebstrap --architectures=arm64 --include="liburing2,libasound2,net-tools,socat,ethtool,iputils-ping,uuid-runtime,rsync,python3,libnuma1,libmnl0,libfuse2,libcap2,libcap-ng0,libhugetlbfs0,libssl3,jq,iptables,nftables,netsniff-ng,tcpdump,traceroute,tshark,fuse3,netcat-openbsd" sid /rootfs/sid.tar \
+    --customize-hook='echo arm64-selftester > "$1/etc/hostname"' \
     --customize-hook='echo 44f789c720e545ab8fb376b1526ba6ca > "$1/etc/machine-id"' \
-    --customize-hook='mkdir -p "$1/etc/systemd/system/serial-getty@ttyS0.service.d"' \
-    --customize-hook='printf "[Service]\nExecStart=\nExecStart=-/sbin/agetty -o \"-p -f -- \\\\\\\\u\" --keep-baud --autologin root 115200,57600,38400,9600 - \$TERM\n" > "$1/etc/systemd/system/serial-getty@ttyS0.service.d/autologin.conf"'
+    --customize-hook='mkdir -p "$1/etc/systemd/system/serial-getty@ttyAMA0.service.d"' \
+    --customize-hook='printf "[Service]\nExecStart=\nExecStart=-/sbin/agetty -o \"-p -f -- \\\\\\\\u\" --keep-baud --autologin root 115200,57600,38400,9600 - \$TERM\n" > "$1/etc/systemd/system/serial-getty@ttyAMA0.service.d/autologin.conf"'
 
 RUN apt-get clean && rm -rf /var/lib/apt/lists/
 
 COPY build-selftest /usr/local/bin
+COPY create_image.sh /usr/local/bin
 
 # The workspace volume is for bind-mounted source trees.
 VOLUME /workspace
